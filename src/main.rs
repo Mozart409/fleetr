@@ -1,10 +1,11 @@
 use clap::Parser;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::{Read, Write};
+use std::path::Path;
 use toml::value::Array;
-use toml::Table;
-use toml::Value;
 
 #[derive(Parser, Debug)]
 #[clap(author = "Mozart409", version, about)]
@@ -22,6 +23,10 @@ struct Args {
     #[arg(short = 'i')]
     init: bool,
 
+    /// Force overwrite of the fleet.toml file
+    #[arg(short = 'f', long = "force")]
+    force: bool,
+
     /// Configure your fleet
     #[arg(short = 'r')]
     run: bool,
@@ -34,7 +39,7 @@ fn main() {
     }
     if args.init {
         println!("INIT");
-        let _ = init();
+        let _ = init(args.force);
     }
     if args.run {
         println!("Up your fleet");
@@ -51,17 +56,26 @@ fn main() {
 
 #[derive(Deserialize, Debug)]
 struct FleetConfig {
-    servers: FleetServers,
+    servers: HashMap<String, FleetServers>,
 }
 #[derive(Deserialize, Debug)]
 struct FleetServers {
     ip: String,
-    ssh_keys: String,
+    ssh_key: String,
     user: String,
     role: String,
     pkgs: Array,
 }
-fn init() -> std::io::Result<()> {
+fn init(force: bool) -> std::io::Result<()> {
+    let file_path = "fleet.toml";
+    if Path::new(file_path).exists() && !force {
+        println!(
+            "File {} already exists. Use --force to overwrite.",
+            file_path
+        );
+        return Ok(());
+    }
+
     println!("Creating init file...");
     let init_txt = format!(
         r#"
@@ -80,14 +94,16 @@ role    = 'agent'
 pkgs = ['nala', 'curl', 'wget']
         "#
     );
-    let mut file = match File::create_new("fleet.toml") {
-        Err(err) => panic!("Could not create file {}", err),
-        Ok(file) => file,
-    };
-    match file.write_all(init_txt.as_bytes()) {
-        Err(err) => panic!("Could not write file {}", err),
-        Ok(_) => println!("Wrote fleet.toml"),
-    }
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(file_path)?;
+
+    file.write_all(init_txt.as_bytes())?;
+    println!("Wrote fleet.toml");
+
     Ok(())
 }
 
@@ -106,7 +122,14 @@ fn run() -> std::io::Result<()> {
 
     let data: FleetConfig = toml::from_str(&content).expect("Invalid toml format");
 
-    println!("{:?}", data);
+    for (name, server) in data.servers {
+        println!("Server: {}", name);
+        println!("  IP: {}", server.ip);
+        println!("  SSH Key: {}", server.ssh_key);
+        println!("  User: {}", server.user);
+        println!("  Role: {}", server.role);
+        println!("  Packages: {:?}", server.pkgs);
+    }
 
     Ok(())
 }
