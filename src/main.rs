@@ -46,6 +46,7 @@ fn main() {
             args.name.unwrap_or("world".to_string())
         );
     }
+    println!("Read the help with --help.");
 }
 
 #[derive(Deserialize)]
@@ -98,6 +99,16 @@ role    = 'agent'
 
 fn run() -> std::io::Result<()> {
     println!("Configuring your fleet...");
+
+    let mut file = match File::open("fleet.toml") {
+        Err(err) => panic!("Could not open file. Create it with fleetr --init {}", err),
+        Ok(file) => file,
+    };
+    let mut content = String::new();
+    file.read_to_string(&mut content)
+        .expect("Could not read into buffer");
+
+    println!("{}", content);
 
     Ok(())
 }
