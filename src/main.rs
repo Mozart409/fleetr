@@ -49,41 +49,35 @@ fn main() {
     println!("Read the help with --help.");
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct FleetConfig {
-    roles: FleetRoles,
     servers: FleetServers,
 }
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct FleetServers {
     ip: String,
     ssh_keys: String,
-}
-#[derive(Deserialize)]
-struct FleetRoles {
+    user: String,
+    role: String,
     pkgs: Array,
 }
 fn init() -> std::io::Result<()> {
     println!("Creating init file...");
     let init_txt = format!(
         r#"
-[roles]
-[roles.cntrl]
-pkgs = ['nala', 'curl', 'wget', 'net-tools']
-
-[roles.agent]
-pkgs = ['nala', 'curl', 'wget']
-
 [servers]
 [servers.aubergine]
 ip      = '10.0.0.10'
 ssh_key = '~/.ssh/key'
+user    = 'root'
 role    = 'cntrl'
-
+pkgs = ['nala', 'curl', 'wget', 'net-tools']
 [servers.rhubarb]
 ip      = '10.0.0.11'
 ssh_key = '~/.ssh/key'
+user    = 'root'
 role    = 'agent'
+pkgs = ['nala', 'curl', 'wget']
         "#
     );
     let mut file = match File::create_new("fleet.toml") {
@@ -109,6 +103,10 @@ fn run() -> std::io::Result<()> {
         .expect("Could not read into buffer");
 
     println!("{}", content);
+
+    let data: FleetConfig = toml::from_str(&content).expect("Invalid toml format");
+
+    println!("{:?}", data);
 
     Ok(())
 }
