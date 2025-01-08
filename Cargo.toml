@@ -13,3 +13,4 @@ clap = { version = "4.3.14", features = ["derive"] }
 toml = "0.8.19"
 toml_edit = "0.22.22"
 serde = { version = "1", features = ["derive"] }
+kameo = "0.13.0"

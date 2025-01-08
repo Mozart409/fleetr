@@ -38,11 +38,10 @@ fn main() {
         println!("DEBUG {args:?}");
     }
     if args.init {
-        println!("INIT");
         let _ = init(args.force);
     }
     if args.run {
-        println!("Up your fleet");
+        println!("Up your f(l)eet and relax.");
         let _ = run();
     }
     if args.name.is_some() {
@@ -118,7 +117,7 @@ fn run() -> std::io::Result<()> {
     file.read_to_string(&mut content)
         .expect("Could not read into buffer");
 
-    println!("{}", content);
+    // println!("{}", content);
 
     let data: FleetConfig = toml::from_str(&content).expect("Invalid toml format");
 
